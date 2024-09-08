@@ -1,0 +1,192 @@
+### Documentation for REST API Endpoints
+
+Below are the API endpoints for both the User Service and Journal Service along with their purpose, method, and usage.
+
+
+### User Service API Endpoints
+
+The User Service is responsible for handling user-related operations such as user registration and CRUD operations. It also publishes user-related events to Kafka.
+
+#### 1. Register a User
+
+- Endpoint: `/api/users/register`
+- Method: `POST`
+- Description: Registers a new user and publishes a "User Created" event to the Kafka topic `user-events`.
+- Request Body (JSON):
+  ```json
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password"
+  }
+  ```
+- Response:
+  - 201 Created on success with user details.
+  - 400 Bad Request if the request is malformed.
+
+- Example Request (with Postman or `curl`):
+  ```bash
+  curl -X POST http://localhost:8081/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Doe", "email": "john@example.com", "password": "password"}'
+  ```
+
+#### 2. Get a User by ID
+
+- Endpoint: `/api/users/{id}`
+- Method: `GET`
+- Description: Retrieves a user by their ID.
+- Path Variable: `id` (user ID).
+- Response:
+  - 200 OK with user details.
+  - 404 Not Found if the user with the given ID is not found.
+
+- Example Request:
+  ```bash
+  curl -X GET http://localhost:8081/api/users/1
+  ```
+
+#### 3. Update a User
+
+- Endpoint: `/api/users/{id}`
+- Method: `PUT`
+- Description: Updates a user's details by their ID.
+- Path Variable: `id` (user ID).
+- Request Body (JSON):
+  ```json
+  {
+    "name": "John Doe Updated",
+    "email": "john.updated@example.com",
+    "password": "newpassword"
+  }
+  ```
+- Response:
+  - 200 OK on successful update.
+  - 404 Not Found if the user with the given ID is not found.
+
+#### 4. Delete a User
+
+- Endpoint: `/api/users/{id}`
+- Method: `DELETE`
+- Description: Deletes a user by their ID.
+- Path Variable: `id` (user ID).
+- Response:
+  - 200 OK on successful deletion.
+  - 404 Not Found if the user with the given ID is not found.
+
+---
+
+### Journal Service API Endpoints
+
+The Journal Service consumes events from Kafka (e.g., user events) and stores them in an H2 database. It provides an API to retrieve all journaled events.
+
+#### 1. Get All Journal Entries
+
+- Endpoint: `/api/journals`
+- Method: `GET`
+- Description: Retrieves all journaled events that were consumed from the Kafka topic.
+- Response:
+  - 200 OK with a list of all journal entries.
+  - 500 Internal Server Error if something goes wrong.
+
+- Example Request:
+  ```bash
+  curl -X GET http://localhost:8082/api/journals
+  ```
+
+- Sample Response (JSON):
+  ```json
+  [
+    {
+      "id": 1,
+      "event": "{\"event\": \"User Created\", \"user\": \"John Doe\"}",
+      "timestamp": "2024-09-01T12:00:00"
+    }
+  ]
+  ```
+
+---
+
+## How to Run and Test the Entire System
+
+Here is a step-by-step guide on how to build, run, and test the User Service and Journal Service using Docker Compose and Kafka.
+
+### 1. Prerequisites
+
+- Docker and Docker Compose installed on your machine.
+- The source code for both the User Service and Journal Service with their respective Dockerfiles.
+
+### 2. Directory Structure
+
+├── docker-compose.yml
+├── user-service
+│   ├── Dockerfile
+│   └── target
+│       └── user-service-0.0.1-SNAPSHOT.jar
+├── journal-service
+│   ├── Dockerfile
+│   └── target
+│       └── journal-service-0.0.1-SNAPSHOT.jar
+```
+
+### 3. Create the Docker Compose File
+
+
+### 4. Building and Running the Services
+
+1. Build and Run the Services:
+   Run the following command in the directory containing the `docker-compose.yml` file:
+   bash
+   docker-compose up --build
+   
+
+   This command will:
+   - Build Docker images for the User Service and Journal Service.
+   - Start Zookeeper and Kafka.
+   - Expose User Service on `localhost:8081` and Journal Service on `localhost:8082`.
+
+2. Verify Kafka is Running:
+   Kafka will be running on `localhost:9092`. You can produce and consume messages using the Kafka console or let the User Service publish messages automatically.
+
+### 5. Testing the Services
+
+#### Test the User Service:
+- Register a new user by sending a POST request to `http://localhost:8081/api/users/register`.
+- Example POST request:
+  bash
+  curl -X POST http://localhost:8081/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "John Doe", "email": "john@example.com", "password": "password"}'
+  
+
+#### Test the Journal Service:
+- Retrieve journaled events consumed from Kafka by sending a GET request to `http://localhost:8082/api/journals`.
+- Example GET request:
+  bash
+  curl -X GET http://localhost:8082/api/journals
+  
+
+### 6. Kafka Interaction
+
+You can view Kafka messages using the Kafka CLI tools. Here's how you can list, produce, and consume messages from Kafka.
+
+1. List Kafka Topics:
+   bash
+   docker exec -it <kafka-container-id> kafka-topics --list --bootstrap-server localhost:9092
+   
+2. Consume Kafka Messages:
+   Use the Kafka console consumer to read messages from the `user-events` topic:
+   bash
+   docker exec -it <kafka-container-id> kafka-console-consumer --topic user-events --from-beginning --bootstrap-server localhost:9092
+   
+
+This will show all user-related events published by the User Service to Kafka.
+
+
+
+1. Run the system using `docker-compose up --build`.
+2. Test User Service by registering users or performing CRUD operations via the provided REST API.
+3. Test Journal Service by retrieving the journaled events that were consumed from Kafka via the API.
+4. Optionally, use the Kafka CLI to interact with Kafka topics.
+
+This documentation provides a full overview of the endpoints, how to run the system, and how to test its functionality. Let me know if you need further assistance!
